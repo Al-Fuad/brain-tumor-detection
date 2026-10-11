@@ -2,7 +2,8 @@
  * API Service for Brain Tumor Detection Backend
  */
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const RAW_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const BASE_URL = RAW_BASE_URL.endsWith('/api/v1') ? RAW_BASE_URL : `${RAW_BASE_URL}/api/v1`;
 
 export class ApiError extends Error {
   constructor(message, status = 500, details = null) {
@@ -10,6 +11,9 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.details = details;
+    this.isModelNotLoaded =
+      status === 503 ||
+      (typeof message === 'string' && message.toLowerCase().includes('model is not loaded'));
   }
 }
 

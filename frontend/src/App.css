@@ -95,6 +95,18 @@
   border-color: rgba(16, 185, 129, 0.25);
 }
 
+.status-loading {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.status-warning {
+  background: rgba(249, 115, 22, 0.12);
+  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
 .status-offline {
   background: rgba(244, 63, 94, 0.1);
   color: var(--accent-rose);
@@ -179,6 +191,152 @@
 .interactive-section {
   margin-top: 1.5rem;
   margin-bottom: 3.5rem;
+}
+
+/* Model Loading & Readiness Banners */
+.model-banner {
+  margin-bottom: 1.25rem;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.3s ease;
+}
+
+.model-banner-loading {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+}
+
+.model-banner-error {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, rgba(249, 115, 22, 0.06) 100%);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.08);
+}
+
+.model-banner-offline {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.model-banner-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.model-banner-icon-loading {
+  color: #fbbf24;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.model-banner-icon-error {
+  color: var(--accent-rose);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.model-banner-icon-offline {
+  color: #94a3b8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.model-banner-info {
+  flex: 1;
+}
+
+.model-banner-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.model-banner-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.model-banner-desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.model-badge-pulse {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.model-badge-error {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+.banner-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.banner-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.spinner-accent {
+  animation: spin 1s linear infinite;
+  border: 2px solid rgba(245, 158, 11, 0.25);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+}
+
+.preview-status-callout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.85rem;
+  color: #fbbf24;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
 }
 
 /* Dropzone */
@@ -954,6 +1112,24 @@
 
 .spec-value-highlight {
   color: var(--accent-emerald);
+}
+
+.spec-value-amber {
+  color: #fbbf24;
+}
+
+.spec-value-rose {
+  color: #fb7185;
+}
+
+.modal-status-notice {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  color: #fbbf24;
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .classes-section h3,

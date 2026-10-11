@@ -11,7 +11,15 @@ import './App.css';
 
 export function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isOnline, isModelLoaded, health, modelInfo } = useBackendInfo();
+  const {
+    isOnline,
+    isModelLoaded,
+    isModelLoading,
+    modelError,
+    health,
+    modelInfo,
+    refresh: refreshBackend,
+  } = useBackendInfo();
   const {
     file,
     previewUrl,
@@ -28,6 +36,8 @@ export function App() {
       <Header
         isOnline={isOnline}
         isModelLoaded={isModelLoaded}
+        isModelLoading={isModelLoading}
+        modelError={modelError}
         onOpenModelInfo={() => setIsModalOpen(true)}
       />
 
@@ -60,6 +70,11 @@ export function App() {
                 onAnalyze={analyze}
                 loading={loading}
                 error={error}
+                isOnline={isOnline}
+                isModelLoaded={isModelLoaded}
+                isModelLoading={isModelLoading}
+                modelError={modelError}
+                onRefreshBackend={refreshBackend}
               />
             ) : (
               <PredictionResult

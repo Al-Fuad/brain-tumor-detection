@@ -1,8 +1,30 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, Sparkles, AlertCircle, FileCheck } from 'lucide-react';
+import {
+  UploadCloud,
+  Image as ImageIcon,
+  Sparkles,
+  AlertCircle,
+  FileCheck,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  Clock,
+} from 'lucide-react';
 import { formatFileSize } from '../../utils/formatters';
 
-export function ImageDropzone({ file, previewUrl, onSelectFile, onAnalyze, loading, error }) {
+export function ImageDropzone({
+  file,
+  previewUrl,
+  onSelectFile,
+  onAnalyze,
+  loading,
+  error,
+  isOnline = true,
+  isModelLoaded = true,
+  isModelLoading = false,
+  modelError = null,
+  onRefreshBackend,
+}) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -110,6 +132,97 @@ export function ImageDropzone({ file, previewUrl, onSelectFile, onAnalyze, loadi
 
   return (
     <div className="upload-container">
+      {/* Model Loading / Readiness Status Banner */}
+      {!isOnline ? (
+        <div className="model-banner model-banner-offline">
+          <div className="model-banner-header">
+            <div className="model-banner-icon-offline">
+              <AlertCircle size={20} />
+            </div>
+            <div className="model-banner-info">
+              <h4 className="model-banner-title">Backend Server Offline</h4>
+              <p className="model-banner-desc">
+                Cannot connect to the FastAPI prediction service. Ensure the backend server is running.
+              </p>
+            </div>
+            {onRefreshBackend && (
+              <button
+                type="button"
+                className="banner-refresh-btn"
+                onClick={onRefreshBackend}
+                title="Retry connecting to backend"
+              >
+                <RefreshCw size={14} />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : !isModelLoaded ? (
+        isModelLoading ? (
+          <div className="model-banner model-banner-loading">
+            <div className="model-banner-header">
+              <div className="model-banner-icon-loading">
+                <Loader2 className="spinner spinner-accent" size={22} />
+              </div>
+              <div className="model-banner-info">
+                <div className="model-banner-title-row">
+                  <h4 className="model-banner-title">Loading Neural Network Model...</h4>
+                  <span className="model-badge model-badge-pulse">
+                    <span className="pulse-dot"></span>
+                    Initializing
+                  </span>
+                </div>
+                <p className="model-banner-desc">
+                  The deep learning model weights (~216 MB) are currently loading in server memory.
+                  You can select or prepare your MRI scan now — analysis will automatically unlock once loaded.
+                </p>
+              </div>
+              {onRefreshBackend && (
+                <button
+                  type="button"
+                  className="banner-refresh-btn"
+                  onClick={onRefreshBackend}
+                  title="Check status now"
+                >
+                  <RefreshCw size={14} />
+                  <span>Check Status</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="model-banner model-banner-error">
+            <div className="model-banner-header">
+              <div className="model-banner-icon-error">
+                <AlertTriangle size={22} />
+              </div>
+              <div className="model-banner-info">
+                <div className="model-banner-title-row">
+                  <h4 className="model-banner-title">Neural Network Model Not Loaded</h4>
+                  <span className="model-badge model-badge-error">Weights Missing</span>
+                </div>
+                <p className="model-banner-desc">
+                  {modelError ||
+                    'Model artifact was not found on the backend. Please check server logs or download configuration.'}
+                </p>
+              </div>
+              {onRefreshBackend && (
+                <button
+                  type="button"
+                  className="banner-refresh-btn"
+                  onClick={onRefreshBackend}
+                  title="Recheck model availability"
+                >
+                  <RefreshCw size={14} />
+                  <span>Recheck</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      ) : null}
+
       {/* Drag & Drop Zone */}
       <div
         className={`dropzone glass-panel ${isDragOver ? 'dropzone-active' : ''} ${
@@ -159,6 +272,17 @@ export function ImageDropzone({ file, previewUrl, onSelectFile, onAnalyze, loadi
                 </div>
               </div>
 
+              {!isModelLoaded && (
+                <div className="preview-status-callout">
+                  <Clock size={15} />
+                  <span>
+                    {isModelLoading
+                      ? 'Scan ready. Waiting for model to finish loading before classifying...'
+                      : 'Model not loaded on backend. Inference disabled until model is ready.'}
+                  </span>
+                </div>
+              )}
+
               <div className="preview-actions">
                 <button
                   type="button"
@@ -178,12 +302,33 @@ export function ImageDropzone({ file, previewUrl, onSelectFile, onAnalyze, loadi
                     e.stopPropagation();
                     onAnalyze();
                   }}
-                  disabled={loading}
+                  disabled={loading || !isModelLoaded}
+                  title={
+                    !isModelLoaded
+                      ? isModelLoading
+                        ? 'Model is loading...'
+                        : 'Model not loaded'
+                      : 'Classify MRI Scan'
+                  }
                 >
                   {loading ? (
                     <span className="btn-loading-state">
                       <span className="spinner"></span>
                       Classifying Scan...
+                    </span>
+                  ) : !isModelLoaded ? (
+                    <span className="btn-loading-state">
+                      {isModelLoading ? (
+                        <>
+                          <span className="spinner"></span>
+                          Loading Model...
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle size={17} />
+                          Model Not Ready
+                        </>
+                      )}
                     </span>
                   ) : (
                     <span className="btn-label-icon">

@@ -60,11 +60,12 @@ app.add_middleware(
 # Register custom exception handlers
 register_error_handlers(app)
 
-# Include routes under /api/v1 prefix
+# Include routes under /api/v1 prefix (documented in OpenAPI / Swagger)
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
-# Also expose at top-level (/health, /model-info, /predict) for convenience
-app.include_router(api_router)
+# Expose at top-level (/health, /model-info, /predict) for backward compatibility,
+# excluded from OpenAPI schema to avoid duplicate entries in Swagger docs.
+app.include_router(api_router, include_in_schema=False)
 
 
 @app.get("/", include_in_schema=False)
@@ -76,9 +77,9 @@ async def root():
             "status": "online",
             "docs": "/docs",
             "endpoints": {
-                "health": "/health",
-                "model_info": "/model-info",
-                "predict": "/predict",
+                "health": f"{settings.API_V1_PREFIX}/health",
+                "model_info": f"{settings.API_V1_PREFIX}/model-info",
+                "predict": f"{settings.API_V1_PREFIX}/predict",
             },
         }
     )

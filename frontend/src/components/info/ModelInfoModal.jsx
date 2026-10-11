@@ -44,13 +44,31 @@ export function ModelInfoModal({ isOpen, onClose, modelInfo, health }) {
 
             <div className="spec-card">
               <span className="spec-label">
-                <Zap size={15} /> Backend Status
+                <Zap size={15} /> Model State
               </span>
-              <span className="spec-value spec-value-highlight">
-                {health?.status === 'healthy' ? 'Active & Healthy' : 'Offline'}
+              <span
+                className={`spec-value ${
+                  health?.model_loaded
+                    ? 'spec-value-highlight'
+                    : health?.model_loading
+                    ? 'spec-value-amber'
+                    : 'spec-value-rose'
+                }`}
+              >
+                {health?.model_loaded
+                  ? 'Loaded & Ready'
+                  : health?.model_loading
+                  ? 'Loading / Warming up'
+                  : 'Weights Not Loaded'}
               </span>
             </div>
           </div>
+
+          {health?.model_error && !health?.model_loaded && (
+            <div className="modal-status-notice">
+              <strong>Server Notice:</strong> {health.model_error}
+            </div>
+          )}
 
           <div className="classes-section">
             <h3>Class Output Labels</h3>

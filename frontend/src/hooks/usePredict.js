@@ -45,7 +45,13 @@ export function usePredict() {
       const result = await predictImage(fileToAnalyze);
       setPrediction(result);
     } catch (err) {
-      setError(err.message || 'An error occurred during classification.');
+      if (err.isModelNotLoaded) {
+        setError(
+          'The neural network model is currently loading or not ready on the server. Please wait a moment and try again.'
+        );
+      } else {
+        setError(err.message || 'An error occurred during classification.');
+      }
     } finally {
       setLoading(false);
     }

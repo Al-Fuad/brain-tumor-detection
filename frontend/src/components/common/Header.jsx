@@ -1,7 +1,27 @@
 import React from 'react';
 import { Activity, Cpu, Server, CheckCircle2, AlertTriangle } from 'lucide-react';
 
-export function Header({ isOnline, isModelLoaded, onOpenModelInfo }) {
+export function Header({ isOnline, isModelLoaded, isModelLoading, modelError, onOpenModelInfo }) {
+  let statusClass = 'status-offline';
+  let statusLabel = 'Backend Offline';
+  let statusTitle = 'Backend disconnected';
+
+  if (isOnline) {
+    if (isModelLoaded) {
+      statusClass = 'status-online';
+      statusLabel = 'System Ready';
+      statusTitle = 'FastAPI connected & neural model initialized';
+    } else if (isModelLoading) {
+      statusClass = 'status-loading';
+      statusLabel = 'Model Loading...';
+      statusTitle = 'Neural network model is downloading/warming up on the server';
+    } else {
+      statusClass = 'status-warning';
+      statusLabel = 'Model Not Loaded';
+      statusTitle = modelError || 'Model artifact is missing or failed to initialize';
+    }
+  }
+
   return (
     <header className="site-header">
       <div className="header-container">
@@ -20,13 +40,15 @@ export function Header({ isOnline, isModelLoaded, onOpenModelInfo }) {
         <div className="header-actions">
           {/* Status Indicator */}
           <div
-            className={`status-pill ${isOnline ? 'status-online' : 'status-offline'}`}
-            title={isOnline ? 'FastAPI backend connected' : 'Backend disconnected'}
+            className={`status-pill ${statusClass}`}
+            title={statusTitle}
+            onClick={onOpenModelInfo}
+            role="button"
+            tabIndex={0}
+            style={{ cursor: 'pointer' }}
           >
             <span className="status-dot"></span>
-            <span className="status-text">
-              {isOnline ? (isModelLoaded ? 'System Ready' : 'Model Loading') : 'Offline'}
-            </span>
+            <span className="status-text">{statusLabel}</span>
           </div>
 
           {/* Model Specs Trigger */}

@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 import time
 from typing import Dict, List, Optional
 import numpy as np
@@ -37,6 +38,7 @@ class ModelService:
         self.model_path: str = settings.MODEL_PATH
         self.class_names: List[str] = settings.CLASS_NAMES
         self.is_loaded: bool = False
+        self.is_loading: bool = False
         self.load_error: Optional[str] = None
 
     @classmethod
@@ -45,29 +47,64 @@ class ModelService:
             cls._instance = cls()
         return cls._instance
 
+    def _resolve_model_path(self) -> str:
+        """Finds the model artifact among candidate locations if configured path doesn't exist directly."""
+        if os.path.exists(self.model_path):
+            return self.model_path
+
+        backend_dir = Path(__file__).resolve().parent.parent.parent
+        project_root = backend_dir.parent
+        candidates = [
+            Path(self.model_path),
+            Path.cwd() / self.model_path,
+            backend_dir / self.model_path,
+            backend_dir / "artifacts" / "brain-tumor-detection-model.keras",
+            project_root / "ml" / "artifacts" / "brain-tumor-detection-model.keras",
+            Path.cwd() / "artifacts" / "brain-tumor-detection-model.keras",
+            Path.cwd() / ".." / "ml" / "artifacts" / "brain-tumor-detection-model.keras",
+            Path.cwd() / "ml" / "artifacts" / "brain-tumor-detection-model.keras",
+        ]
+
+        for cand in candidates:
+            try:
+                resolved = cand.resolve()
+                if resolved.is_file():
+                    logger.info("Found model artifact at candidate path: %s", resolved)
+                    return str(resolved)
+            except Exception:
+                continue
+
+        return self.model_path
+
     def load_model(self) -> bool:
         """Loads the Keras model from disk and warms it up."""
         if self.is_loaded and self.model is not None:
             return True
 
-        if not os.path.exists(self.model_path):
-            if settings.MODEL_DOWNLOAD_URL:
-                try:
-                    logger.info("Model file missing. Downloading from %s...", settings.MODEL_DOWNLOAD_URL)
-                    os.makedirs(os.path.dirname(os.path.abspath(self.model_path)), exist_ok=True)
-                    import urllib.request
-                    urllib.request.urlretrieve(settings.MODEL_DOWNLOAD_URL, self.model_path)
-                    logger.info("Model downloaded successfully to %s", self.model_path)
-                except Exception as e:
-                    self.load_error = f"Failed to download model artifact: {str(e)}"
-                    logger.error(self.load_error)
-                    return False
-            else:
-                self.load_error = f"Model artifact not found at: {self.model_path}"
-                logger.warning(self.load_error)
-                return False
-
+        self.is_loading = True
         try:
+            # First check if model file exists directly or in candidate paths
+            resolved_path = self._resolve_model_path()
+            if os.path.exists(resolved_path):
+                self.model_path = resolved_path
+
+            if not os.path.exists(self.model_path):
+                if settings.MODEL_DOWNLOAD_URL:
+                    try:
+                        logger.info("Model file missing. Downloading from %s...", settings.MODEL_DOWNLOAD_URL)
+                        os.makedirs(os.path.dirname(os.path.abspath(self.model_path)), exist_ok=True)
+                        import urllib.request
+                        urllib.request.urlretrieve(settings.MODEL_DOWNLOAD_URL, self.model_path)
+                        logger.info("Model downloaded successfully to %s", self.model_path)
+                    except Exception as e:
+                        self.load_error = f"Failed to download model artifact: {str(e)}"
+                        logger.error(self.load_error)
+                        return False
+                else:
+                    self.load_error = f"Model artifact not found at: {self.model_path}"
+                    logger.warning(self.load_error)
+                    return False
+
             logger.info("Loading Keras model from %s...", self.model_path)
             self.model = keras.models.load_model(self.model_path)
             self.is_loaded = True
@@ -86,6 +123,8 @@ class ModelService:
             self.is_loaded = False
             logger.error("Failed to load model: %s", str(e), exc_info=True)
             return False
+        finally:
+            self.is_loading = False
 
     def predict(self, preprocessed_image: np.ndarray, filename: Optional[str] = None) -> PredictionResponse:
         """
@@ -173,6 +212,7 @@ class ModelService:
             "metadata": {
                 "framework": f"Keras {keras.__version__}",
                 "loaded_in_memory": self.is_loaded,
+                "loading": self.is_loading,
                 "load_error": self.load_error,
             },
         }
