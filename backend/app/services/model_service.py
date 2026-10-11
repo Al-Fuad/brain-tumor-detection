@@ -51,9 +51,21 @@ class ModelService:
             return True
 
         if not os.path.exists(self.model_path):
-            self.load_error = f"Model artifact not found at: {self.model_path}"
-            logger.warning(self.load_error)
-            return False
+            if settings.MODEL_DOWNLOAD_URL:
+                try:
+                    logger.info("Model file missing. Downloading from %s...", settings.MODEL_DOWNLOAD_URL)
+                    os.makedirs(os.path.dirname(os.path.abspath(self.model_path)), exist_ok=True)
+                    import urllib.request
+                    urllib.request.urlretrieve(settings.MODEL_DOWNLOAD_URL, self.model_path)
+                    logger.info("Model downloaded successfully to %s", self.model_path)
+                except Exception as e:
+                    self.load_error = f"Failed to download model artifact: {str(e)}"
+                    logger.error(self.load_error)
+                    return False
+            else:
+                self.load_error = f"Model artifact not found at: {self.model_path}"
+                logger.warning(self.load_error)
+                return False
 
         try:
             logger.info("Loading Keras model from %s...", self.model_path)

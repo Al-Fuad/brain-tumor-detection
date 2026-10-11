@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     IMAGE_SIZE: int = 256
     CLASS_NAMES: List[str] = ["glioma", "meningioma", "notumor", "pituitary"]
     MAX_FILE_SIZE_MB: int = 15
+    MODEL_DOWNLOAD_URL: Union[str, None] = os.getenv("MODEL_DOWNLOAD_URL", None)
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
