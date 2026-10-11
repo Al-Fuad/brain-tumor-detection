@@ -1,0 +1,109 @@
+# ==============================================================================
+# Brain Tumor Detection Project - .gitignore
+# ==============================================================================
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE & Editor Configurations
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.jbeval/
+*.swp
+*.swo
+*~
+
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+*-checkpoint.ipynb
+
+# Machine Learning - Model Artifacts & Weights (Large Files)
+# GitHub enforces a 100MB file limit; model binaries should not be committed directly.
+artifacts/
+**/artifacts/
+*.h5
+*.hdf5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+*.ckpt*
+*.joblib
+*.pkl
+
+# Machine Learning - Datasets & Archives
+data/
+dataset/
+datasets/
+kaggle/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Experiment Tracking & Logs
+logs/
+*.log
+runs/
+wandb/
+mlruns/
+lightning_logs/
+
+# Frontend / Node.js (for frontend web app)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+frontend/dist/
+frontend/build/
+.next/
+.nuxt/
+out/
