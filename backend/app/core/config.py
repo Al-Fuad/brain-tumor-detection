@@ -25,15 +25,22 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Union[List[str], str] = ["*"]
 
     # ML Model Configuration
-    # Fallback to local workspace model location if not overridden
+    # Fallback to local workspace model location if not overridden (prefer lightweight TFLite)
+    _default_tflite: str = str(
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "ml"
+        / "artifacts"
+        / "brain-tumor-model.tflite"
+    )
+    _default_keras: str = str(
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "ml"
+        / "artifacts"
+        / "brain-tumor-detection-model.keras"
+    )
     MODEL_PATH: str = os.getenv(
         "MODEL_PATH",
-        str(
-            Path(__file__).resolve().parent.parent.parent.parent
-            / "ml"
-            / "artifacts"
-            / "brain-tumor-detection-model.keras"
-        ),
+        _default_tflite if os.path.exists(_default_tflite) else _default_keras,
     )
     IMAGE_SIZE: int = 256
     CLASS_NAMES: List[str] = ["glioma", "meningioma", "notumor", "pituitary"]

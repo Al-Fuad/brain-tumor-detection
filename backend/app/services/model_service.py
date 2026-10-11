@@ -29,12 +29,16 @@ CLASS_DESCRIPTIONS: Dict[str, str] = {
 
 
 class ModelService:
-    """Singleton service for loading, caching, and serving predictions from the Keras model."""
+    """Singleton service for loading, caching, and serving predictions from Keras and TFLite models."""
 
     _instance: Optional["ModelService"] = None
 
     def __init__(self):
         self.model: Optional[keras.Model] = None
+        self.interpreter: Optional[object] = None
+        self.is_tflite: bool = False
+        self.input_details: Optional[list] = None
+        self.output_details: Optional[list] = None
         self.model_path: str = settings.MODEL_PATH
         self.class_names: List[str] = settings.CLASS_NAMES
         self.is_loaded: bool = False
@@ -54,8 +58,15 @@ class ModelService:
 
         backend_dir = Path(__file__).resolve().parent.parent.parent
         project_root = backend_dir.parent
+
+        # Prefer lightweight TFLite model if available, fallback to .keras
         candidates = [
             Path(self.model_path),
+            backend_dir / "artifacts" / "brain-tumor-model.tflite",
+            project_root / "ml" / "artifacts" / "brain-tumor-model.tflite",
+            Path.cwd() / "artifacts" / "brain-tumor-model.tflite",
+            Path.cwd() / ".." / "ml" / "artifacts" / "brain-tumor-model.tflite",
+            Path.cwd() / "ml" / "artifacts" / "brain-tumor-model.tflite",
             Path.cwd() / self.model_path,
             backend_dir / self.model_path,
             backend_dir / "artifacts" / "brain-tumor-detection-model.keras",
@@ -77,8 +88,8 @@ class ModelService:
         return self.model_path
 
     def load_model(self) -> bool:
-        """Loads the Keras model from disk and warms it up."""
-        if self.is_loaded and self.model is not None:
+        """Loads the model (TFLite or Keras) from disk and warms it up."""
+        if self.is_loaded and (self.model is not None or self.interpreter is not None):
             return True
 
         self.is_loading = True
@@ -105,8 +116,21 @@ class ModelService:
                     logger.warning(self.load_error)
                     return False
 
-            logger.info("Loading Keras model from %s...", self.model_path)
-            self.model = keras.models.load_model(self.model_path)
+            if self.model_path.endswith(".tflite"):
+                logger.info("Loading TensorFlow Lite model from %s...", self.model_path)
+                import tensorflow as tf
+                self.interpreter = tf.lite.Interpreter(model_path=self.model_path)
+                self.interpreter.allocate_tensors()
+                self.input_details = self.interpreter.get_input_details()
+                self.output_details = self.interpreter.get_output_details()
+                self.is_tflite = True
+                self.model = None
+            else:
+                logger.info("Loading Keras model from %s...", self.model_path)
+                self.model = keras.models.load_model(self.model_path, compile=False)
+                self.is_tflite = False
+                self.interpreter = None
+
             self.is_loaded = True
             self.load_error = None
             logger.info("Model loaded successfully. Warming up with dummy input...")
@@ -115,7 +139,13 @@ class ModelService:
             dummy_input = np.zeros(
                 (1, settings.IMAGE_SIZE, settings.IMAGE_SIZE, 3), dtype=np.float32
             )
-            _ = self.model.predict(dummy_input, verbose=0)
+            if self.is_tflite:
+                self.interpreter.set_tensor(self.input_details[0]["index"], dummy_input)
+                self.interpreter.invoke()
+                _ = self.interpreter.get_tensor(self.output_details[0]["index"])
+            else:
+                _ = self.model.predict(dummy_input, verbose=0)
+
             logger.info("Model warmup complete.")
             return True
         except Exception as e:
@@ -137,7 +167,7 @@ class ModelService:
         Returns:
             PredictionResponse with probabilities, detected class, and metrics.
         """
-        if not self.is_loaded or self.model is None:
+        if not self.is_loaded or (self.model is None and self.interpreter is None):
             # Try lazy load if possible
             if not self.load_model():
                 raise ModelNotLoadedError(
@@ -145,7 +175,12 @@ class ModelService:
                 )
 
         start_time = time.perf_counter()
-        raw_predictions = self.model.predict(preprocessed_image, verbose=0)
+        if self.is_tflite:
+            self.interpreter.set_tensor(self.input_details[0]["index"], preprocessed_image)
+            self.interpreter.invoke()
+            raw_predictions = self.interpreter.get_tensor(self.output_details[0]["index"])
+        else:
+            raw_predictions = self.model.predict(preprocessed_image, verbose=0)
         inference_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
         # Probabilities vector for first sample
@@ -197,11 +232,18 @@ class ModelService:
     def get_info(self) -> dict:
         """Returns structured metadata about the neural model."""
         exists = os.path.exists(self.model_path)
-        input_shape = list(self.model.input_shape) if self.model else [None, settings.IMAGE_SIZE, settings.IMAGE_SIZE, 3]
+        if self.is_tflite:
+            input_shape = [1, settings.IMAGE_SIZE, settings.IMAGE_SIZE, 3]
+            arch = "VGG16 + Custom Head (TensorFlow Lite Optimized)"
+            framework_str = "TensorFlow Lite"
+        else:
+            input_shape = list(self.model.input_shape) if self.model else [None, settings.IMAGE_SIZE, settings.IMAGE_SIZE, 3]
+            arch = "VGG16 + Custom Dense Head"
+            framework_str = f"Keras {keras.__version__}"
 
         return {
             "model_name": "Brain Tumor Classifier (VGG16 Transfer Learning)",
-            "architecture": "VGG16 + Custom Dense Head",
+            "architecture": arch,
             "input_shape": input_shape,
             "image_size": settings.IMAGE_SIZE,
             "channels": 3,
@@ -210,7 +252,8 @@ class ModelService:
             "model_file_exists": exists,
             "model_path": self.model_path,
             "metadata": {
-                "framework": f"Keras {keras.__version__}",
+                "framework": framework_str,
+                "is_tflite": self.is_tflite,
                 "loaded_in_memory": self.is_loaded,
                 "loading": self.is_loading,
                 "load_error": self.load_error,
