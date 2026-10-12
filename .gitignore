@@ -76,10 +76,13 @@ artifacts/
 *.pkl
 
 # Machine Learning - Datasets & Archives
-data/
+/data/
+/ml/data/
+/backend/data/
 dataset/
 datasets/
 kaggle/
+!frontend/src/data/
 *.zip
 *.tar
 *.tar.gz
