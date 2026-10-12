@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
   UploadCloud,
-  Image as ImageIcon,
   Sparkles,
   AlertCircle,
   FileCheck,
@@ -9,8 +8,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Clock,
+  Check,
 } from 'lucide-react';
-import { formatFileSize } from '../../utils/formatters';
+import { formatFileSize, SAMPLE_SCANS, fetchSampleFile } from '../../utils/formatters';
 
 export function ImageDropzone({
   file,
@@ -26,6 +26,7 @@ export function ImageDropzone({
   onRefreshBackend,
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [loadingSampleId, setLoadingSampleId] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -61,73 +62,20 @@ export function ImageDropzone({
   };
 
   /**
-   * Generates a sample MRI slice dynamically on an offscreen canvas
-   * allowing users to test inference instantly without having to download images!
+   * Loads one of the clinical sample MRI images provided in public/
    */
-  const handleLoadSample = (sampleType = 'tumor') => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-
-    // Dark background
-    ctx.fillStyle = '#05070c';
-    ctx.fillRect(0, 0, 256, 256);
-
-    // Brain ellipse contour
-    const centerX = 128;
-    const centerY = 128;
-    const grad = ctx.createRadialGradient(centerX, centerY, 20, centerX, centerY, 105);
-    grad.addColorStop(0, '#737373');
-    grad.addColorStop(0.5, '#404040');
-    grad.addColorStop(0.85, '#262626');
-    grad.addColorStop(1, '#05070c');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, 88, 106, 0, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Ventricles
-    ctx.fillStyle = '#171717';
-    ctx.beginPath();
-    ctx.ellipse(centerX - 18, centerY - 10, 8, 28, -0.15, 0, 2 * Math.PI);
-    ctx.ellipse(centerX + 18, centerY - 10, 8, 28, 0.15, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Cortex fissures texture
-    ctx.strokeStyle = '#262626';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 8; i++) {
-      ctx.beginPath();
-      ctx.arc(centerX + (i % 2 === 0 ? 30 : -30), 80 + i * 12, 14, 0, Math.PI);
-      ctx.stroke();
+  const handleSelectSampleScan = async (sample) => {
+    if (loading || loadingSampleId) return;
+    try {
+      setLoadingSampleId(sample.id);
+      const sampleFile = await fetchSampleFile(sample);
+      onSelectFile(sampleFile);
+    } catch (err) {
+      console.error('Failed to load sample image:', err);
+      alert(`Could not load sample ${sample.label}. Please try uploading an image manually.`);
+    } finally {
+      setLoadingSampleId(null);
     }
-
-    if (sampleType === 'tumor') {
-      // High-intensity neoplastic lesion
-      const lesionGrad = ctx.createRadialGradient(160, 100, 2, 160, 100, 22);
-      lesionGrad.addColorStop(0, '#ffffff');
-      lesionGrad.addColorStop(0.5, '#e5e5e5');
-      lesionGrad.addColorStop(0.9, '#a3a3a3');
-      lesionGrad.addColorStop(1, 'transparent');
-
-      ctx.fillStyle = lesionGrad;
-      ctx.beginPath();
-      ctx.ellipse(160, 100, 20, 24, 0.4, 0, 2 * Math.PI);
-      ctx.fill();
-    }
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const sampleFile = new File(
-          [blob],
-          sampleType === 'tumor' ? 'sample_mri_lesion.png' : 'sample_mri_healthy.png',
-          { type: 'image/png' }
-        );
-        onSelectFile(sampleFile);
-      }
-    }, 'image/png');
   };
 
   return (
@@ -351,26 +299,76 @@ export function ImageDropzone({
         </div>
       )}
 
-      {/* Quick Test Samples */}
-      <div className="samples-bar">
-        <span className="samples-label">Don't have an MRI scan handy?</span>
-        <div className="samples-buttons">
-          <button
-            type="button"
-            className="sample-btn"
-            onClick={() => handleLoadSample('tumor')}
-            disabled={loading}
-          >
-            <ImageIcon size={14} /> Sample Tumor Scan
-          </button>
-          <button
-            type="button"
-            className="sample-btn"
-            onClick={() => handleLoadSample('healthy')}
-            disabled={loading}
-          >
-            <ImageIcon size={14} /> Sample Healthy Scan
-          </button>
+      {/* Quick Test Pre-loaded Clinical Samples */}
+      <div className="samples-showcase">
+        <div className="samples-header">
+          <div className="samples-header-title">
+            <Sparkles size={16} className="samples-header-icon" />
+            <span>Pre-loaded Clinical MRI Samples</span>
+          </div>
+          <span className="samples-header-subtitle">
+            Click any calibrated scan below to test model inference immediately
+          </span>
+        </div>
+
+        <div className="samples-grid">
+          {SAMPLE_SCANS.map((sample) => {
+            const isCurrentlySelected = file?.name === sample.name;
+            const isLoadingThis = loadingSampleId === sample.id;
+
+            return (
+              <button
+                key={sample.id}
+                type="button"
+                className={`sample-card glass-panel ${
+                  isCurrentlySelected ? 'sample-card-selected' : ''
+                } ${isLoadingThis ? 'sample-card-loading' : ''}`}
+                onClick={() => handleSelectSampleScan(sample)}
+                disabled={loading || loadingSampleId !== null}
+                style={{
+                  '--sample-accent': sample.color,
+                }}
+              >
+                <div className="sample-thumbnail-frame">
+                  <img
+                    src={sample.image}
+                    alt={`${sample.label} MRI Sample`}
+                    className="sample-thumbnail-img"
+                    loading="lazy"
+                  />
+                  {isLoadingThis && (
+                    <div className="sample-thumbnail-overlay">
+                      <Loader2 size={20} className="spinner" />
+                    </div>
+                  )}
+                  {isCurrentlySelected && (
+                    <div className="sample-selected-indicator" title="Currently selected">
+                      <Check size={14} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="sample-meta">
+                  <div className="sample-badge-row">
+                    <span
+                      className="sample-type-badge"
+                      style={{
+                        color: sample.color,
+                        backgroundColor: sample.badgeBg,
+                        borderColor: sample.badgeBorder,
+                      }}
+                    >
+                      {sample.label}
+                    </span>
+                  </div>
+                  <span className="sample-name-label">{sample.subtitle}</span>
+                  <span className="sample-action-hint">
+                    {isCurrentlySelected ? 'Selected' : 'Click to load'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

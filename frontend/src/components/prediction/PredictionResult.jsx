@@ -6,13 +6,11 @@ import {
   RotateCcw,
   Sparkles,
   Info,
-  Maximize2,
-  FileText,
 } from 'lucide-react';
 import { ConfidenceBar } from './ConfidenceBar';
-import { getClassConfig, formatClassLabel } from '../../utils/formatters';
+import { getClassConfig, SAMPLE_SCANS } from '../../utils/formatters';
 
-export function PredictionResult({ prediction, previewUrl, onReset }) {
+export function PredictionResult({ prediction, previewUrl, onReset, onSelectSample }) {
   if (!prediction) return null;
 
   const topConfig = getClassConfig(prediction.predicted_class);
@@ -128,6 +126,28 @@ export function PredictionResult({ prediction, previewUrl, onReset }) {
               <span>Analyze Another MRI</span>
             </button>
           </div>
+
+          {/* Quick Switch Clinical Samples */}
+          {onSelectSample && (
+            <div className="result-samples-strip">
+              <span className="result-samples-title">Quick test other clinical cases:</span>
+              <div className="result-samples-pills">
+                {SAMPLE_SCANS.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="result-sample-pill"
+                    onClick={() => onSelectSample(s)}
+                    title={`Switch and test ${s.label} scan`}
+                    style={{ '--pill-accent': s.color }}
+                  >
+                    <img src={s.image} alt={s.label} className="result-sample-mini-img" />
+                    <span>{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

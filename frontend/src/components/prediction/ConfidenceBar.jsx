@@ -1,7 +1,7 @@
 import React from 'react';
 import { getClassConfig } from '../../utils/formatters';
 
-export function ConfidenceBar({ label, probability, percentage, isTop }) {
+export function ConfidenceBar({ label, _probability, percentage, isTop }) {
   const config = getClassConfig(label);
 
   return (

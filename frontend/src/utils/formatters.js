@@ -65,3 +65,61 @@ export function formatFileSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+export const SAMPLE_SCANS = [
+  {
+    id: 'glioma',
+    key: 'glioma',
+    name: 'glioma.jpg',
+    label: 'Glioma',
+    subtitle: 'Malignant Glial Tumor',
+    image: `${import.meta.env.BASE_URL}glioma.jpg`,
+    color: '#f43f5e',
+    badgeBg: 'rgba(244, 63, 94, 0.15)',
+    badgeBorder: 'rgba(244, 63, 94, 0.35)',
+  },
+  {
+    id: 'meningioma',
+    key: 'meningioma',
+    name: 'meningioma.jpg',
+    label: 'Meningioma',
+    subtitle: 'Extra-axial Meninges Tumor',
+    image: `${import.meta.env.BASE_URL}meningioma.jpg`,
+    color: '#f59e0b',
+    badgeBg: 'rgba(245, 158, 11, 0.15)',
+    badgeBorder: 'rgba(245, 158, 11, 0.35)',
+  },
+  {
+    id: 'pituitary',
+    key: 'pituitary',
+    name: 'pituitary.jpg',
+    label: 'Pituitary',
+    subtitle: 'Sellar Region Adenoma',
+    image: `${import.meta.env.BASE_URL}pituitary.jpg`,
+    color: '#06b6d4',
+    badgeBg: 'rgba(6, 182, 212, 0.15)',
+    badgeBorder: 'rgba(6, 182, 212, 0.35)',
+  },
+  {
+    id: 'notumor',
+    key: 'notumor',
+    name: 'no.jpg',
+    label: 'No Tumor',
+    subtitle: 'Healthy Anatomical Tissue',
+    image: `${import.meta.env.BASE_URL}no.jpg`,
+    color: '#10b981',
+    badgeBg: 'rgba(16, 185, 129, 0.15)',
+    badgeBorder: 'rgba(16, 185, 129, 0.35)',
+  },
+];
+
+export async function fetchSampleFile(sample) {
+  const url = sample.image || sample.path;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to load sample image ${sample.name} (${res.status})`);
+  }
+  const blob = await res.blob();
+  return new File([blob], sample.name, { type: blob.type || 'image/jpeg' });
+}
+

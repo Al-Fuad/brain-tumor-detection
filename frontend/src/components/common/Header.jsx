@@ -1,7 +1,14 @@
 import React from 'react';
-import { Activity, Cpu, Server, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Activity, Cpu, BarChart2 } from 'lucide-react';
 
-export function Header({ isOnline, isModelLoaded, isModelLoading, modelError, onOpenModelInfo }) {
+export function Header({
+  isOnline,
+  isModelLoaded,
+  isModelLoading,
+  modelError,
+  onOpenModelInfo,
+  onOpenReports,
+}) {
   let statusClass = 'status-offline';
   let statusLabel = 'Backend Offline';
   let statusTitle = 'Backend disconnected';
@@ -21,6 +28,17 @@ export function Header({ isOnline, isModelLoaded, isModelLoading, modelError, on
       statusTitle = modelError || 'Model artifact is missing or failed to initialize';
     }
   }
+
+  const handleScrollReports = () => {
+    if (onOpenReports) {
+      onOpenReports();
+    } else {
+      const el = document.getElementById('model-reports-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
 
   return (
     <header className="site-header">
@@ -51,6 +69,18 @@ export function Header({ isOnline, isModelLoaded, isModelLoading, modelError, on
             <span className="status-text">{statusLabel}</span>
           </div>
 
+          {/* Model Reports Trigger */}
+          <button
+            className="reports-nav-btn"
+            onClick={handleScrollReports}
+            aria-label="View Model Accuracy and Reports"
+            title="View Model Accuracy (92.5%), F1-Score (92.0%), and Notebook Graphs"
+          >
+            <BarChart2 size={16} />
+            <span>Reports & Graphs</span>
+            <span className="nav-accuracy-tag">92.5%</span>
+          </button>
+
           {/* Model Specs Trigger */}
           <button
             className="specs-btn"
@@ -58,7 +88,7 @@ export function Header({ isOnline, isModelLoaded, isModelLoading, modelError, on
             aria-label="View Model Specifications"
           >
             <Cpu size={16} />
-            <span>Model Specs</span>
+            <span>Specs</span>
           </button>
         </div>
       </div>
