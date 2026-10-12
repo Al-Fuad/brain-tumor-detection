@@ -76,8 +76,11 @@ export function Header({
             aria-label="View Model Accuracy and Reports"
             title="View Model Accuracy (92.5%), F1-Score (92.0%), and Notebook Graphs"
           >
-            <BarChart2 size={16} />
-            <span>Reports & Graphs</span>
+            <BarChart2 size={16} className="reports-nav-icon" />
+            <span className="reports-nav-label">
+              <span className="reports-nav-main">Reports</span>
+              <span className="reports-nav-extra"> & Graphs</span>
+            </span>
             <span className="nav-accuracy-tag">92.5%</span>
           </button>
 
@@ -88,7 +91,7 @@ export function Header({
             aria-label="View Model Specifications"
           >
             <Cpu size={16} />
-            <span>Specs</span>
+            <span className="specs-btn-text">Specs</span>
           </button>
         </div>
       </div>
